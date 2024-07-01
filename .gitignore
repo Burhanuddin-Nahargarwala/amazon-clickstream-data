@@ -1,0 +1,4 @@
+.env
+.vscode/
+__pycache__/
+sample_event_generation.json
