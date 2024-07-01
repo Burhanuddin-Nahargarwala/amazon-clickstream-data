@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Enqurious Streaming API</title>
+    <link rel="stylesheet" href=" {{ url_for('static', path='/css/index.css') }} ">
+    <!-- Include jQuery from a CDN -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+
+    <!-- Add the favicon link tag -->
+    <link rel="icon" href="https://media.licdn.com/dms/image/C560BAQELnfnY6d1eJw/company-logo_200_200/0/1626617691059?e=2147483647&v=beta&t=0LiEdSzpb3FAVoPi4J2PrQ0YckngM4IwV9rkpgro-g8" type="image/x-icon">
+</head>
+
+<body>
+    <header>
+        <h1>Welcome to Enqurious Streaming API</h1>
+        <p>This API will generate Clickstream data for Amazon, an Ecommerce Platform</p>
+
+        <img src="https://www.mentorskool.com/mentorskool.svg" alt="Logo" class="header-logo">
+    </header>
+
+    <div class="description">
+        Once you choose a cloud provider and generate data, the clickstream data will be published to the stream.
+    </div>
+
+    <div class="choice">
+        Select a cloud provider below 👇
+    </div>
+
+    <!-- This is the space for API-generated data -->
+    <div id="apiDataContainer">
+        <!-- API-generated data will be displayed here -->
+    </div>
+
+    <div class="button-container">
+        <div class="button-box">
+            <h2>AWS</h2>
+            <button class="cloud-button" id="aws">SELECT</button>
+        </div>
+        <div class="button-box">
+            <h2>Azure</h2>
+            <button class="cloud-button" id="azure">SELECT</button>
+        </div>
+        <div class="button-box">
+            <h2>GCP</h2>
+            <button class="cloud-button" id="gcp">SELECT</button>
+        </div>
+    </div>
+
+    <div class="modal" id="azureModal">
+        <div class="modal-content">
+            <span class="close" id="azureClose">&times;</span>
+            <h2 id="connectionStringHeading">Azure - Enter Connection String</h2>
+            <input type="text" id="connectionString" placeholder="Endpoint= 'Connection String'">
+            <input type="text" id="Hub Name" placeholder="Hub Name">
+            <input type="text" id="emailId" placeholder="Email ID">
+            <input type="text" id="azureAccessToken" placeholder="Access Token">
+            <!-- <input type="text" id="Access Token" placeholder="Access Token"> -->
+            <button class="modalButton" id="azureGenerateData">Generate Data</button>
+            <button class="modalButton" id="azureStopGenerateData">Stop Data Generation</button>
+        </div>
+    </div>
+
+    <div class="modal" id="gcpModal">
+        <div class="modal-content">
+            <span class="close" id="gcpClose">&times;</span>
+            <h2 id="gcpHeading">GCP - Enter Details</h2>
+            <!-- <input type="text" id="hubName" placeholder="Hub Name"> -->
+            <input type="text" id="projectId" placeholder="Project ID">
+            <input type="text" id="topicId" placeholder="Topic ID">
+            <input type="text" id="gcpAccessToken" placeholder="Access Token">
+            <input type="text" id="gcpEmailId" placeholder="Email ID">
+            <div class="fileMessage">
+                <span class="fileInputMesssage">
+                    Upload your Service account key as JSON here 👇
+                </span>
+            </div>
+            <input type="file" id="credentialsFile" placeholder="Choose File" style="cursor: pointer;">
+            <button class="modalButton" id="gcpGenerateData">Generate Data</button>
+            <button class="modalButton" id="gcpStopGenerateData">Stop Data Generation</button>
+        </div>
+    </div>
+
+    <div class="comingSoonModal" id="awsModal">
+        <div class="comingSoonModalContent">
+            <span class="close" id="awsClose">&times;</span>
+            <p class="comingSoonModalText"> Coming Soon </p>
+        </div>
+    </div>
+    
+    <script src=" {{ url_for('static', path='/js/index.js') }} "></script>
+</body>
+
+</html>
