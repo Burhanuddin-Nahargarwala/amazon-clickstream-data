@@ -213,7 +213,7 @@ Asynchronous event generation and uploading are critical for handling real-time 
 - `before_data_generation.py`: Preliminary data generation logic.
 - `data_generation.py`: Main data generation logic.
 - `constant.py`: Constants used across the project.
-- `api_config.py`: File to update config.json to stop data generation, in case when user requests to stop data generation
+- `modify_config_file.py`: Logic to update config.json to stop data generation, in case when user requests to stop data generation
 - `s3.py`: Functions for interacting with AWS S3.
 - `dynamod_db.py`: Functions for interacting with AWS DynamoDB.
 - `auth.py`: Authentication logic.

@@ -1,5 +1,5 @@
 from datetime import datetime
-from api_config import read_config, update_config
+from modify_config_file import read_config, update_config
 from dynamod_db import DynamoDB
 from fastapi import HTTPException
 from constant import (
