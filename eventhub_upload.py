@@ -1,5 +1,12 @@
 from azure.eventhub import EventHubProducerClient, EventData
 from azure.eventhub.exceptions import EventHubError
+import asyncio
+
+
+# async def send_to_eventhub_async(event, producer):
+#     loop = asyncio.get_event_loop()
+#     await loop.run_in_executor(None, send_to_eventhub, event, producer)
+
 
 def send_to_eventhub(event: str, producer: EventHubProducerClient):
     try:

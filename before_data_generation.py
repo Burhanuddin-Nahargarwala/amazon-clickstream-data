@@ -90,4 +90,4 @@ def before_data_generation(email_id: str, cloud_platform: str, **kwargs):
     )
     loop_thread.start()
 
-    return {"message": "Data Generation Successfully!"}
+    return {"message": "Data Generation Started !!"}

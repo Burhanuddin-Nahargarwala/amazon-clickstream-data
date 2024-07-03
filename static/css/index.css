@@ -266,3 +266,53 @@ div.description {
     color: #333;
     /* Align text to the left */
 }
+
+.toast {
+    visibility: hidden;
+    min-width: 300px;
+    background-color: #FFFFFF;
+    color: #4b4848; /* White text for readability */
+    text-align: center;
+    border-radius: 8px;
+    position: fixed;
+    z-index: 1;
+    right: 20px;
+    top: 20px;
+    font-size: 22px;
+    font-family: "Roboto", sans-serif;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    transition: opacity 0.5s, top 0.5s;
+}
+
+.toast.show {
+    visibility: visible;
+    opacity: 1;
+    top: 25px;
+    /* animation: fadein 0.5s, fadeout 0.5s 2.5s; */
+}
+
+@keyframes fadein {
+    from {
+        top: 20px;
+        opacity: 0;
+    }
+
+    to {
+        top: 40px;
+        opacity: 1;
+    }
+}
+
+@keyframes fadeout {
+    from {
+        top: 40px;
+        opacity: 1;
+    }
+
+    to {
+        top: 20px;
+        opacity: 0;
+    }
+}

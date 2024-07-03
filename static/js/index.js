@@ -36,6 +36,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /**
+     * Create a toast notification
+     * @param {string} message - The message to display in the toast.
+     */
+    function createToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerText = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 100);
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 300);
+        }, 3000);
+    }
+
+    /**
      * Handles the file selection event for the GCP modal. Fetch the content of the credentials file
      * @param {Event} event - The file selection event.
      */
@@ -79,7 +101,6 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     azureButton.addEventListener('click', () => {
         cloudProvider = 'Azure';
-        // connectionStringHeading.innerText = 'Azure - Enter Connection String';
         showModal('Azure');
     });
 
@@ -126,10 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {string} apiURL - The URL to send the API request to.
      * @param {object} headers - The headers to include in the API request.
      */
-    function stopGenerateData(apiURL, headers) {
+    function stopGenerateData(apiURL, headers, body) {
         fetch(apiURL, {
-            method: 'GET',
+            method: 'POST',
             headers: headers,
+            body: JSON.stringify(body)
         })
             .then(response => {
                 if (!response.ok) {
@@ -139,10 +161,12 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .then(data => {
                 // Handle the API response data here
+                createToast(`✅ ${data.message}`);
                 console.log(data);
             })
             .catch(error => {
                 // Handle errors here
+                createToast("❌ Error stopping data generation!");
                 console.log('There was a problem with the fetch operation:', error);
             });
     }
@@ -159,9 +183,13 @@ document.addEventListener('DOMContentLoaded', () => {
             'Content-Type': 'application/json', // Adjust content type as needed
         };
 
-        // Send a GET request with headers and payload
-        apiURL = `/stop_processing?cloud_provider=${cloudProvider}&email_id=${emailId.value}`
-        stopGenerateData(apiURL, headers);
+        // Send a POST request with headers and payload
+        const body = {
+            "cloud_provider": cloudProvider,
+            "email_id": emailId.value
+        };
+        const apiURL = `/stop_processing`;
+        stopGenerateData(apiURL, headers, body);
         closeModal('Azure');
     })
 
@@ -177,9 +205,13 @@ document.addEventListener('DOMContentLoaded', () => {
             'Content-Type': 'application/json', // Adjust content type as needed
         };
 
-        // Send a GET request with headers and payload
-        apiURL = `/stop_processing?cloud_provider=${cloudProvider}&email_id=${gcpEmailId.value}`
-        stopGenerateData(apiURL, headers);
+        // Send a POST request with headers and payload
+        const body = {
+            "cloud_provider": cloudProvider,
+            "email_id": gcpEmailId.value
+        };
+        const apiURL = `/stop_processing`;
+        stopGenerateData(apiURL, headers, body);
         closeModal('GCP');
     })
 
@@ -189,10 +221,11 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {string} apiURL - The URL to send the API request to.
      * @param {object} headers - The headers to include in the API request.
      */
-    function requestToGenerateData(apiURL, headers) {
+    function requestToGenerateData(apiURL, headers, body) {
         fetch(apiURL, {
-            method: 'GET',
+            method: 'POST',
             headers: headers,
+            body: JSON.stringify(body)
         })
             .then(response => {
                 if (!response.ok) {
@@ -202,10 +235,12 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .then(data => {
                 // Handle the API response data here
+                createToast(`✅ ${data.message}`);
                 console.log(data);
             })
             .catch(error => {
                 // Handle errors here
+                createToast("❌ Error starting data generation!");
                 console.log('There was a problem with the fetch operation:', error);
             });
     }
@@ -217,8 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     azureGenerateDataButton.addEventListener('click', () => {
         // URL-encode the string
-        const encodedConnectionString = encodeURIComponent(connectionString.value);
-        // console.log(azureAccessToken.value);
+        // const encodedConnectionString = encodeURIComponent(connectionString.value);
 
         // Request headers with the access token
         const headers = {
@@ -226,11 +260,16 @@ document.addEventListener('DOMContentLoaded', () => {
             'Content-Type': 'application/json', // Adjust content type as needed
         };
 
-        // Send a GET request with headers and payload
-        apiURL = `/data_generation?cloud_provider=${cloudProvider}&connection_string=${encodedConnectionString}&hub_name=${hubName.value}&email_id=${emailId.value}`
+        // Send a POST request with headers and payload
+        const body = {
+            "cloud_provider": cloudProvider,
+            "connection_string": connectionString.value,
+            "hub_name": hubName.value,
+            "email_id": emailId.value
+        };
+        const apiURL = `/data_generation`;
 
-        requestToGenerateData(apiURL, headers);
-        // alert(response);
+        requestToGenerateData(apiURL, headers, body);
 
         closeModal('Azure');
     });
@@ -242,9 +281,9 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     gcpGenerateDataButton.addEventListener('click', () => {
         console.log(credentialFileContent);
-        
+
         // Encode the credentials
-        const encodedCredentialsString = encodeURIComponent(credentialFileContent);
+        // const encodedCredentialsString = encodeURIComponent(credentialFileContent);
 
         // Request headers with the access token
         const headers = {
@@ -252,10 +291,17 @@ document.addEventListener('DOMContentLoaded', () => {
             'Content-Type': 'application/json', // Adjust content type as needed
         };
 
-        // Send a GET request with headers and payload
-        apiURL = `/gcp_data_generation?credentials=${encodedCredentialsString}&project_id=${projectId.value}&topic_id=${topicId.value}&email_id=${gcpEmailId.value}`
+        // Send a POST request with headers and payload
+        const body = {
+            "cloud_provider": cloudProvider,
+            "credentials": credentialFileContent,
+            "project_id": projectId.value,
+            "topic_id": topicId.value,
+            "email_id": gcpEmailId.value
+        };
+        const apiURL = `/data_generation`;
 
-        requestToGenerateData(apiURL, headers);
+        requestToGenerateData(apiURL, headers, body);
         // alert(response);
 
         closeModal('GCP');
