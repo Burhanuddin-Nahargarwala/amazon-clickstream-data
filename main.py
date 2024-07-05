@@ -14,7 +14,7 @@ import asyncio
 from pathlib import Path
 
 # import eventhub_upload
-from api_config import read_config, update_config
+from modify_config_file import read_config, update_config
 from before_data_generation import before_data_generation
 from dynamod_db import DynamoDB
 import auth

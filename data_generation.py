@@ -1,5 +1,5 @@
 from datetime import datetime
-from api_config import read_config, update_config
+from modify_config_file import read_config, update_config
 from constant import (
     S3_FOLDER_PREFIX,
     BUCKET_NAME,
@@ -9,14 +9,10 @@ from fastapi import HTTPException
 import json
 import random
 import time
-from datetime import datetime, timedelta
-import urllib
 from google.cloud import pubsub_v1
 
-import eventhub_upload
 from azure.eventhub import EventData
 from azure.eventhub.aio import EventHubProducerClient
-from dynamod_db import DynamoDB
 import asyncio
 
 
@@ -141,6 +137,7 @@ async def generate_events(
         # event["user_id"] = events_data["User ID"]
         event["timestamp"] = time.time()
         # print(event)
+
         if cloud_platform == "Azure":
             hub_name = cloud_parameters.get("hub_name")
             connection_string = cloud_parameters.get("connection_string")
