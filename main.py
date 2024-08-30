@@ -111,12 +111,12 @@ async def start_data_generation(details: dict = Body(...)):
     return message
 
 
-if __name__ == "__main__":
-    import uvicorn
-    from dotenv import load_dotenv, find_dotenv
+# if __name__ == "__main__":
+#     import uvicorn
+#     from dotenv import load_dotenv, find_dotenv
 
-    # Once the request is sent, create a dynamodb object
-    if "AWS_REGION" not in os.environ:
-        load_dotenv(find_dotenv())
+#     # Once the request is sent, create a dynamodb object
+#     if "AWS_REGION" not in os.environ:
+#         load_dotenv(find_dotenv())
 
-    uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)
+#     uvicorn.run(app, host="127.0.0.1", port=8001, reload=True)
