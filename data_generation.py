@@ -106,7 +106,7 @@ async def gcp_data_generation(
         data_str = json.dumps(data_dict)
         data_encoded_str = data_str.encode("utf-8")
         future = publisher.publish(topic_path, data_encoded_str)
-        await future  # Wait for the publish operation to complete asynchronously
+        future.result()  # Wait for the publish operation to complete asynchronously
 
         print(f"Published {data_encoded_str} to {topic_path}: {future.result()}")
     except Exception:
