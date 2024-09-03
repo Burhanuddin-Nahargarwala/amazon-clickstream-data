@@ -120,18 +120,21 @@ async def gcp_data_generation(
 
 
 async def generate_events(
-    events_data, email_id, dynamodb, called_at, cloud_platform, cloud_parameters
+    events_data, email_id, dynamodb, called_at, cloud_platform, cloud_parameters, stop_event
 ):
-    global STOP_EVENT
+    # global STOP_EVENT
 
     for event in events_data["Events"]:
+        if stop_event.is_set():
+            return "stopped"
+        
         config = read_config(config_file_path)
         stop_flag = config["stop_flag"]
         stop_email_id = config["stop_email_id"]
 
         if stop_flag and stop_email_id == email_id:
-            STOP_EVENT = True
-            return
+            stop_event.set()
+            return "stopped"
 
         event["session_id"] = events_data["Session ID"]
         # event["user_id"] = events_data["User ID"]
@@ -170,13 +173,16 @@ async def generate_events(
 
 # Function to process a batch of session files
 async def process_batch_of_files(
-    s3_obj, file_keys, email_id, dynamodb, called_at, cloud_platform, cloud_parameters
+    s3_obj, file_keys, email_id, dynamodb, called_at, cloud_platform, cloud_parameters, stop_event
 ):
-    global STOP_EVENT
+    # global STOP_EVENT
 
     for file_key in file_keys:
 
-        if STOP_EVENT:
+        # if STOP_EVENT:
+        #     return "stopped"
+
+        if stop_event.is_set():
             return "stopped"
 
         try:
@@ -189,14 +195,19 @@ async def process_batch_of_files(
 
         # Convert JSON into dict to add event timestamp
         data_dict = json.loads(data)
-        await generate_events(
-            data_dict, email_id, dynamodb, called_at, cloud_platform, cloud_parameters
+        result = await generate_events(
+            data_dict, email_id, dynamodb, called_at, cloud_platform, cloud_parameters, stop_event
         )  # Run event generation asynchronously
+
+        if result == "stopped":
+            return "stopped"
 
 
 async def data_generation(
     s3_obj, dynamodb, email_id, called_at, cloud_platform, cloud_parameters
 ):
+    stop_event = asyncio.Event()
+
     # Example usage
     session_files_indexes = json.loads(
         s3_obj.get_data(bucket_name=BUCKET_NAME, key="session_files_indexes.json")
@@ -239,6 +250,7 @@ async def data_generation(
                     called_at,
                     cloud_platform,
                     cloud_parameters,
+                    stop_event
                 )
             )
         )
