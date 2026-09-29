@@ -15,63 +15,67 @@ from stream_errors import SERVER, StreamError, describe_azure_error, describe_gc
 NUM_BATCHES = 5
 
 
-async def azure_data_generation(hub_name, connection_string, data_dict):
+class AzureSender:
     """
-    Sends one event to Azure Event Hubs.
-
-    Parameters:
-    - `hub_name` (str): The name of the Azure Event Hub.
-    - `connection_string` (str): The connection string for the Azure Event Hubs namespace.
-    - `data_dict` (dict): The event to be sent, represented as a dictionary.
-
-    Raises:
-    - StreamError: A user-readable description of why the event could not be sent.
+    Sends events to one Azure event hub over a single connection that is opened once per stream and shared
+    by all batches (they run on the same asyncio loop). Opening a connection per event was the main CPU cost
+    when many streams run at once.
     """
-    try:
-        producer = EventHubProducerClient.from_connection_string(
+
+    def __init__(self, hub_name, connection_string):
+        self.hub_name = hub_name
+        self.producer = EventHubProducerClient.from_connection_string(
             connection_string, eventhub_name=hub_name
         )
 
-        async with producer:
-            event_data_batch = await producer.create_batch()
-
-            event_data_batch.add(EventData(json.dumps(data_dict)))
-
-            await producer.send_batch(event_data_batch)
+    async def send(self, data_dict):
+        try:
+            await self.producer.send_batch([EventData(json.dumps(data_dict))])
             print(f"Event sent to Azure Event Hub: {data_dict}")
+        except Exception as err:
+            raise describe_azure_error(err, self.hub_name) from err
 
-    except Exception as err:
-        raise describe_azure_error(err, hub_name) from err
-
-
-async def gcp_data_generation(credentials, project_id, topic_id, data_dict):
-    """
-    Publishes one event to a Google Pub/Sub topic.
-
-    Parameters:
-    - `credentials` (dict): The GCP service account key as a dictionary.
-    - `project_id` (str): The GCP project ID.
-    - `topic_id` (str): The GCP topic ID to which the message will be published.
-    - `data_dict` (dict): The event to be published, represented as a dictionary.
-
-    Raises:
-    - StreamError: A user-readable description of why the event could not be published.
-    """
-    try:
-        publisher = pubsub_v1.PublisherClient.from_service_account_info(credentials)
-        topic_path = publisher.topic_path(project_id, topic_id)
-
-        data_str = json.dumps(data_dict)
-        data_encoded_str = data_str.encode("utf-8")
-        future = publisher.publish(topic_path, data_encoded_str)
-        message_id = future.result()  # Wait for the publish operation to complete
-
-        print(f"Published {data_encoded_str} to {topic_path}: {message_id}")
-    except Exception as err:
-        raise describe_gcp_error(err, project_id, topic_id) from err
+    async def close(self):
+        await self.producer.close()
 
 
-async def generate_events(events_data, tracker: JobTracker, batch, cloud_platform, cloud_parameters, stop_event):
+class GCPSender:
+    """Publishes events to one Google Pub/Sub topic with a single publisher client per stream."""
+
+    def __init__(self, credentials, project_id, topic_id):
+        self.project_id = project_id
+        self.topic_id = topic_id
+        try:
+            self.publisher = pubsub_v1.PublisherClient.from_service_account_info(credentials)
+            self.topic_path = self.publisher.topic_path(project_id, topic_id)
+        except Exception as err:
+            raise describe_gcp_error(err, project_id, topic_id) from err
+
+    async def send(self, data_dict):
+        try:
+            data_encoded_str = json.dumps(data_dict).encode("utf-8")
+            future = self.publisher.publish(self.topic_path, data_encoded_str)
+            # Await without blocking the loop, so the other batches keep sending meanwhile
+            message_id = await asyncio.wrap_future(future)
+            print(f"Published {data_encoded_str} to {self.topic_path}: {message_id}")
+        except Exception as err:
+            raise describe_gcp_error(err, self.project_id, self.topic_id) from err
+
+    async def close(self):
+        await asyncio.to_thread(self.publisher.stop)
+
+
+def create_sender(cloud_platform, cloud_parameters):
+    if cloud_platform == "Azure":
+        return AzureSender(cloud_parameters.get("hub_name"), cloud_parameters.get("connection_string"))
+    return GCPSender(
+        cloud_parameters.get("credentials"),
+        cloud_parameters.get("project_id"),
+        cloud_parameters.get("topic_id"),
+    )
+
+
+async def generate_events(events_data, tracker: JobTracker, batch, sender, stop_event):
     for event in events_data["Events"]:
         if stop_event.is_set():
             return "stopped"
@@ -80,24 +84,16 @@ async def generate_events(events_data, tracker: JobTracker, batch, cloud_platfor
             stop_event.set()
             return "stopped"
 
+        if tracker.time_limit_reached():
+            stop_event.set()
+            return "time_limit"
+
         event["session_id"] = events_data["Session ID"]
         # event["user_id"] = events_data["User ID"]
         event["timestamp"] = time.time()
 
         try:
-            if cloud_platform == "Azure":
-                await azure_data_generation(
-                    cloud_parameters.get("hub_name"),
-                    cloud_parameters.get("connection_string"),
-                    event,
-                )
-            elif cloud_platform == "GCP":
-                await gcp_data_generation(
-                    cloud_parameters.get("credentials"),
-                    cloud_parameters.get("project_id"),
-                    cloud_parameters.get("topic_id"),
-                    event,
-                )
+            await sender.send(event)
         except StreamError as err:
             # Stop every batch; the error is shown to the user in the UI
             tracker.fail(err)
@@ -113,7 +109,7 @@ async def generate_events(events_data, tracker: JobTracker, batch, cloud_platfor
 
 
 # Function to process a batch of session files
-async def process_batch_of_files(s3_obj, file_keys, tracker: JobTracker, batch, cloud_platform, cloud_parameters, stop_event):
+async def process_batch_of_files(s3_obj, file_keys, tracker: JobTracker, batch, sender, stop_event):
     for file_key in file_keys:
         if stop_event.is_set():
             return "failed" if tracker.failed else "stopped"
@@ -126,18 +122,23 @@ async def process_batch_of_files(s3_obj, file_keys, tracker: JobTracker, batch, 
 
         # Convert JSON into dict to add event timestamp
         data_dict = json.loads(data)
-        result = await generate_events(
-            data_dict, tracker, batch, cloud_platform, cloud_parameters, stop_event
-        )  # Run event generation asynchronously
+        result = await generate_events(data_dict, tracker, batch, sender, stop_event)
 
-        if result in ("stopped", "failed"):
+        if result in ("stopped", "failed", "time_limit"):
             return result
 
 
 async def data_generation(s3_obj, tracker: JobTracker, cloud_platform, cloud_parameters):
     stop_event = asyncio.Event()
+    sender = None
 
     try:
+        try:
+            sender = create_sender(cloud_platform, cloud_parameters)
+        except StreamError as err:
+            tracker.fail(err)
+            return {"message": "Data Generation failed!"}
+
         session_files_indexes = json.loads(
             s3_obj.get_data(bucket_name=BUCKET_NAME, key="session_files_indexes.json")
         )
@@ -146,12 +147,10 @@ async def data_generation(s3_obj, tracker: JobTracker, cloud_platform, cloud_par
         session_keys = list(session_files_indexes.values())
         batches = [session_keys[i::NUM_BATCHES] for i in range(NUM_BATCHES)]
 
-        # Process each batch using asyncio
+        # Process each batch using asyncio; all batches share the stream's single connection
         tasks = [
             asyncio.create_task(
-                process_batch_of_files(
-                    s3_obj, batch_keys, tracker, batch_number, cloud_platform, cloud_parameters, stop_event
-                )
+                process_batch_of_files(s3_obj, batch_keys, tracker, batch_number, sender, stop_event)
             )
             for batch_number, batch_keys in enumerate(batches, start=1)
         ]
@@ -165,11 +164,20 @@ async def data_generation(s3_obj, tracker: JobTracker, cloud_platform, cloud_par
             f"{type(err).__name__}: {err}"[:300],
         ))
         raise
+    finally:
+        if sender is not None:
+            try:
+                await sender.close()
+            except Exception as err:
+                print(f"Could not close the connection for {tracker.job_id}: {err}")
 
     if tracker.failed or "failed" in result:
         return {"message": "Data Generation failed!"}
+    if "time_limit" in result:
+        tracker.finish("stopped", stop_reason="time_limit")
+        return {"message": "Data Generation stopped after reaching the time limit."}
     if "stopped" in result:
-        tracker.finish("stopped")
+        tracker.finish("stopped", stop_reason="user")
         return {"message": "Work successfully stopped!"}
 
     # Once processing is completed, update the status to completed

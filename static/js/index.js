@@ -78,6 +78,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${s}s`;
     }
 
+    function formatLimit(seconds) {
+        const hours = seconds / 3600;
+        if (Number.isInteger(hours)) return `${hours} hour${hours === 1 ? '' : 's'}`;
+        return formatDuration(seconds);
+    }
+
     function formatAgo(seconds) {
         if (seconds < 2) return 'just now';
         return `${formatDuration(seconds)} ago`;
@@ -506,7 +512,12 @@ document.addEventListener('DOMContentLoaded', () => {
         setStatus(status.key, status.label);
 
         const service = job.cloud_platform === 'GCP' ? 'Google Pub/Sub topic' : 'Azure event hub';
-        consoleTarget.textContent = `${service} "${job.target}" · started ${new Date(job.started_at * 1000).toLocaleString()}`;
+        let target = `${service} "${job.target}" · started ${new Date(job.started_at * 1000).toLocaleString()}`;
+        if (job.status === 'in_progress' && job.max_duration_seconds) {
+            const stopsAt = new Date((job.started_at + job.max_duration_seconds) * 1000);
+            target += ` · stops automatically at ${stopsAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        }
+        consoleTarget.textContent = target;
 
         if (TERMINAL_STATUSES.includes(job.status)) {
             stopping = false;
@@ -561,6 +572,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 { reference: true });
         } else if (job.status === 'completed') {
             show('info', 'Stream completed', 'All sample sessions have been sent to your stream.');
+        } else if (job.status === 'stopped' && job.stop_reason === 'time_limit') {
+            show('info', `Stopped automatically after ${formatLimit(job.max_duration_seconds)}`,
+                `Streams stop on their own after ${formatLimit(job.max_duration_seconds)} (${(job.events_sent || 0).toLocaleString()} events sent). `
+                + 'Click Start streaming to begin a new stream whenever you need more data.');
         } else if (job.status === 'stopped') {
             show('info', 'Stream stopped', `Stopped after ${(job.events_sent || 0).toLocaleString()} events. Start again whenever you are ready.`);
         } else {
