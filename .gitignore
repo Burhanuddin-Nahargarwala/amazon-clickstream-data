@@ -3,3 +3,4 @@
 __pycache__/
 sample_event_generation.json
 *_copy.py
+.early.coverage

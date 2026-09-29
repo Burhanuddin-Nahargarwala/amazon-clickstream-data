@@ -16,7 +16,7 @@ from azure.eventhub.aio import EventHubProducerClient
 import asyncio
 
 
-STOP_EVENT = False
+# STOP_EVENT = False
 
 
 async def azure_data_generation(
