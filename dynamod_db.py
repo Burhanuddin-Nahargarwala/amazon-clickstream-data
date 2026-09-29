@@ -114,6 +114,19 @@ class DynamoDB:
         return items # should return only single record
 
 
+    def read_latest_by_email(self, email_id: str):
+        """Returns the user's most recent request (called_at is the sort key), or None."""
+        response = self.dynamodb_client.query(
+            TableName=self.table_name,
+            KeyConditionExpression='email_id = :pkValue',
+            ExpressionAttributeValues={':pkValue': {'S': email_id}},
+            ScanIndexForward=False,
+            Limit=1,
+        )
+        items = response.get('Items', [])
+        return items[0] if items else None
+
+
     def update_data(self, email_id, called_at, status_value):
         # Define the update expression and attribute values
         update_expression = 'SET #status = :statusValue'

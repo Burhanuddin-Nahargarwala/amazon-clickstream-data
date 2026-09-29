@@ -4,101 +4,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
-    
     <title>Enqurious Streaming API</title>
-    <link rel="stylesheet" href=" {{ url_for('static', path='/css/index.css') }} ">
-    <!-- Include jQuery from a CDN -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
-
-    <!-- Add the favicon link tag -->
-    <link rel="icon" href="https://media.licdn.com/dms/image/C560BAQELnfnY6d1eJw/company-logo_200_200/0/1626617691059?e=2147483647&v=beta&t=0LiEdSzpb3FAVoPi4J2PrQ0YckngM4IwV9rkpgro-g8" type="image/x-icon">
+    <meta name="description" content="Stream realistic Amazon clickstream events into your own Azure Event Hub or Google Pub/Sub topic.">
+    <link rel="icon" href="{{ url_for('static', path='/images/favicon-32.png') }}" type="image/png" sizes="32x32">
+    <link rel="icon" href="{{ url_for('static', path='/images/favicon-192.png') }}" type="image/png" sizes="192x192">
+    <link rel="apple-touch-icon" href="{{ url_for('static', path='/images/apple-touch-icon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/index.css') }}">
 </head>
 
 <body>
-    <header>
-        <h1>Welcome to Enqurious Streaming API</h1>
-        <p>This API will generate Clickstream data for Amazon, an Ecommerce Platform</p>
-
-        <img src="{{ url_for('static', path='/images/enqurious-logo.webp') }}" alt="Enqurious logo"
-            class="header-logo">
+    <header class="topbar">
+        <div class="topbar-inner">
+            <img src="{{ url_for('static', path='/images/enqurious-logo.webp') }}" alt="Enqurious" class="brand-logo">
+            <span class="brand-divider" aria-hidden="true"></span>
+            <span class="brand-product">Streaming API</span>
+        </div>
     </header>
 
-    <div class="description">
-        Once you choose a cloud provider and generate data, the clickstream data will be published to the stream.
-    </div>
+    <main class="page">
+        <section class="intro">
+            <h1>Stream Amazon clickstream data into your cloud</h1>
+            <p>Realistic e-commerce events (logins, product views, add-to-cart, purchases) published live to your own
+                event stream. Watch every event here and match it against your stream as it arrives.</p>
+            <ol class="steps">
+                <li><span class="step-num">1</span>Choose your cloud</li>
+                <li><span class="step-num">2</span>Enter your stream details</li>
+                <li><span class="step-num">3</span>Watch events arrive live</li>
+            </ol>
+        </section>
 
-    <div class="choice">
-        Select a cloud provider below 👇
-    </div>
+        <div class="workspace">
+            <!-- ============ Configuration ============ -->
+            <section class="panel config" aria-labelledby="configTitle">
+                <h2 id="configTitle" class="panel-title">Stream setup</h2>
 
-    <!-- This is the space for API-generated data -->
-    <div id="apiDataContainer">
-        <!-- API-generated data will be displayed here -->
-    </div>
+                <div class="provider-tabs" role="tablist" aria-label="Cloud provider">
+                    <button class="provider-tab" role="tab" id="tab-Azure" data-provider="Azure" aria-selected="true">
+                        <span class="provider-name">Azure</span>
+                        <span class="provider-service">Event Hubs</span>
+                    </button>
+                    <button class="provider-tab" role="tab" id="tab-GCP" data-provider="GCP" aria-selected="false">
+                        <span class="provider-name">Google Cloud</span>
+                        <span class="provider-service">Pub/Sub</span>
+                    </button>
+                    <button class="provider-tab" role="tab" id="tab-AWS" data-provider="AWS" aria-selected="false" disabled
+                        title="Coming soon">
+                        <span class="provider-name">AWS</span>
+                        <span class="provider-service">Coming soon</span>
+                    </button>
+                </div>
 
-    <div class="button-container">
-        <div class="button-box">
-            <h2>AWS</h2>
-            <button class="cloud-button" id="aws">SELECT</button>
+                <form id="streamForm" novalidate>
+                    <!-- Azure fields -->
+                    <div class="provider-fields" data-for="Azure">
+                        <div class="field">
+                            <label for="connectionString">Connection string</label>
+                            <textarea id="connectionString" rows="3" spellcheck="false" autocomplete="off"
+                                placeholder="Endpoint=sb://<namespace>.servicebus.windows.net/;SharedAccessKeyName=...;SharedAccessKey=..."></textarea>
+                            <p class="hint">Event Hubs namespace → Shared access policies → your policy → Connection
+                                string–primary key. The policy needs <strong>Send</strong> permission.</p>
+                        </div>
+                        <div class="field">
+                            <label for="hubName">Event hub name</label>
+                            <input type="text" id="hubName" spellcheck="false" autocomplete="off" placeholder="clickstream">
+                            <p class="hint">Case sensitive. Filled in automatically if your connection string contains
+                                <code>EntityPath</code>.</p>
+                        </div>
+                    </div>
+
+                    <!-- GCP fields -->
+                    <div class="provider-fields" data-for="GCP" hidden>
+                        <div class="field">
+                            <label for="credentialsFile">Service account key (JSON)</label>
+                            <label class="dropzone" id="dropzone" for="credentialsFile">
+                                <input type="file" id="credentialsFile" accept=".json,application/json">
+                                <span class="dropzone-text" id="dropzoneText">Drop the key file here or <u>browse</u></span>
+                            </label>
+                            <p class="hint">IAM &amp; Admin → Service accounts → Keys → Add key (JSON). The account needs
+                                the <strong>Pub/Sub Publisher</strong> role.</p>
+                        </div>
+                        <div class="field-row">
+                            <div class="field">
+                                <label for="projectId">Project ID</label>
+                                <input type="text" id="projectId" spellcheck="false" autocomplete="off" placeholder="my-project">
+                            </div>
+                            <div class="field">
+                                <label for="topicId">Topic ID</label>
+                                <input type="text" id="topicId" spellcheck="false" autocomplete="off" placeholder="clickstream">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Common fields -->
+                    <div class="field">
+                        <label for="emailId">Your email</label>
+                        <input type="email" id="emailId" autocomplete="email" placeholder="you@company.com">
+                        <p class="hint">Identifies your stream, so you can stop it or check on it later.</p>
+                    </div>
+                    <div class="field">
+                        <label for="accessToken">Access token</label>
+                        <div class="input-with-action">
+                            <input type="password" id="accessToken" autocomplete="off" spellcheck="false" placeholder="Provided by Enqurious">
+                            <button type="button" class="input-action" id="toggleToken" aria-label="Show access token">Show</button>
+                        </div>
+                    </div>
+
+                    <div class="form-error" id="formError" role="alert" hidden></div>
+
+                    <div class="actions">
+                        <button type="submit" class="btn btn-primary" id="startButton">
+                            <span class="btn-label">Start streaming</span>
+                        </button>
+                        <button type="button" class="btn btn-danger" id="stopButton" disabled>Stop</button>
+                    </div>
+                    <button type="button" class="link-button" id="checkStatusButton">Already started a stream? Check its status</button>
+                </form>
+            </section>
+
+            <!-- ============ Live console ============ -->
+            <section class="panel console" aria-labelledby="consoleTitle">
+                <div class="console-head">
+                    <div>
+                        <h2 id="consoleTitle" class="panel-title">Stream console</h2>
+                        <p class="console-target" id="consoleTarget">No stream running</p>
+                    </div>
+                    <span class="status-pill" id="statusPill" data-status="idle" aria-live="polite">Idle</span>
+                </div>
+
+                <div class="metrics">
+                    <div class="metric">
+                        <span class="metric-label">Events sent</span>
+                        <span class="metric-value" id="metricEvents">0</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Running for</span>
+                        <span class="metric-value" id="metricElapsed">–</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Rate</span>
+                        <span class="metric-value" id="metricRate">–</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Last event</span>
+                        <span class="metric-value" id="metricLast">–</span>
+                    </div>
+                </div>
+
+                <div class="alert" id="jobAlert" hidden>
+                    <p class="alert-title" id="jobAlertTitle"></p>
+                    <p class="alert-message" id="jobAlertMessage"></p>
+                    <div class="alert-reference" id="jobAlertReference" hidden>
+                        Reference: <code id="jobAlertJobId"></code>
+                        <button type="button" class="chip-button" id="copyReference">Copy</button>
+                    </div>
+                    <details class="alert-detail" id="jobAlertDetailWrap" hidden>
+                        <summary>Technical details</summary>
+                        <code id="jobAlertDetail"></code>
+                    </details>
+                </div>
+
+                <div class="feed-toolbar">
+                    <span class="feed-caption">Live events <span class="feed-hint">— click an event to see the exact
+                            payload sent</span></span>
+                    <label class="toggle">
+                        <input type="checkbox" id="followToggle" checked>
+                        <span>Follow latest</span>
+                    </label>
+                </div>
+
+                <div class="feed" id="feed" role="log" aria-label="Events sent to your stream">
+                    <div class="feed-empty" id="feedEmpty">
+                        <p>Events will appear here as they are sent to your stream.</p>
+                        <p class="feed-empty-sub">Each event is sent every 3–5 seconds per session batch.</p>
+                    </div>
+                </div>
+            </section>
         </div>
-        <div class="button-box">
-            <h2>Azure</h2>
-            <button class="cloud-button" id="azure">SELECT</button>
-        </div>
-        <div class="button-box">
-            <h2>GCP</h2>
-            <button class="cloud-button" id="gcp">SELECT</button>
-        </div>
-    </div>
+    </main>
 
-    <div class="modal" id="azureModal">
-        <div class="modal-content">
-            <span class="close" id="azureClose">&times;</span>
-            <h2 id="connectionStringHeading">Azure - Enter Connection String</h2>
-            <input type="text" id="connectionString" placeholder="Endpoint= 'Connection String'">
-            <input type="text" id="Hub Name" placeholder="Hub Name">
-            <input type="text" id="emailId" placeholder="Email ID">
-            <input type="text" id="azureAccessToken" placeholder="Access Token">
-            <!-- <input type="text" id="Access Token" placeholder="Access Token"> -->
-            <button class="modalButton" id="azureGenerateData">Generate Data</button>
-            <button class="modalButton" id="azureStopGenerateData">Stop Data Generation</button>
-        </div>
-    </div>
+    <footer class="footer">
+        Enqurious Streaming API · Events are generated from sample Amazon clickstream sessions.
+    </footer>
 
-    <div class="modal" id="gcpModal">
-        <div class="modal-content">
-            <span class="close" id="gcpClose">&times;</span>
-            <h2 id="gcpHeading">GCP - Enter Details</h2>
-            <!-- <input type="text" id="hubName" placeholder="Hub Name"> -->
-            <input type="text" id="projectId" placeholder="Project ID">
-            <input type="text" id="topicId" placeholder="Topic ID">
-            <input type="text" id="gcpAccessToken" placeholder="Access Token">
-            <input type="text" id="gcpEmailId" placeholder="Email ID">
-            <div class="fileMessage">
-                <span class="fileInputMesssage">
-                    Upload your Service account key as JSON here 👇
-                </span>
-            </div>
-            <input type="file" id="credentialsFile" placeholder="Choose File" style="cursor: pointer;">
-            <button class="modalButton" id="gcpGenerateData">Generate Data</button>
-            <button class="modalButton" id="gcpStopGenerateData">Stop Data Generation</button>
-        </div>
-    </div>
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
-    <div class="comingSoonModal" id="awsModal">
-        <div class="comingSoonModalContent">
-            <span class="close" id="awsClose">&times;</span>
-            <p class="comingSoonModalText"> Coming Soon </p>
-        </div>
-    </div>
-
-    <!-- <div class="toast show">
-        ✅ Data Generation Started !!
-    </div> -->
-    
-    <script src=" {{ url_for('static', path='/js/index.js') }} "></script>
+    <script src="{{ url_for('static', path='/js/index.js') }}"></script>
 </body>
 
 </html>
