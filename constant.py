@@ -14,3 +14,9 @@ DYNAMODB_REGION = os.environ.get("dynamodb-region")
 BUCKET_NAME = "enqurious-clickstream-data"
 S3_FOLDER_PREFIX = ""
 config_file_path = 'config.json'
+
+# Live job progress (event feed, counters, errors, stop flag) - on-demand table, items expire via TTL
+ACTIVITY_TABLE_NAME = "clickstream-job-activity"
+ACTIVITY_TTL_SECONDS = 24 * 60 * 60
+# An in_progress job with no event for this long is treated as dead (e.g. container restarted mid-job)
+STALE_JOB_SECONDS = 180
