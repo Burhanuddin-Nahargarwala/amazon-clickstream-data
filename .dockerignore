@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+.vscode
+env
+venv
+__pycache__
+*.pyc
+*_copy.py
+sample_event_generation.json
+Dockerfile
+.dockerignore
+start.sh
