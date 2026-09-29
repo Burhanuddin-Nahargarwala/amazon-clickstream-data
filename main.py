@@ -8,6 +8,10 @@ import random
 import time
 import json
 import os
+import mimetypes
+
+# Python 3.11 doesn't know .webp, so the logo would be served as text/plain
+mimetypes.add_type("image/webp", ".webp")
 
 # from mangum import Mangum
 import asyncio
