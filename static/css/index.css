@@ -1,5 +1,6 @@
 /* ============ Design tokens ============ */
 :root {
+    color-scheme: light;
     --brand-blue: #005ec9;
     --brand-blue-hover: #004fa8;
     --brand-green: #34a853;
@@ -21,13 +22,13 @@
     --warn-bg: #fff5e0;
     --warn-border: #f5d9a3;
 
-    /* The console is always dark, like a terminal */
-    --console-bg: #0e1524;
-    --console-row: #131c2f;
-    --console-row-hover: #1a2640;
-    --console-border: #22304d;
-    --console-text: #d5dcea;
-    --console-muted: #7f8aa3;
+    /* Event feed */
+    --console-bg: #f6f8fb;
+    --console-row: #ffffff;
+    --console-row-hover: #eef3fb;
+    --console-border: #e2e6ee;
+    --console-text: #1f2a3d;
+    --console-muted: #6b7489;
 
     --radius: 12px;
     --radius-sm: 8px;
@@ -35,32 +36,6 @@
 
     --font: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Roboto, Arial, sans-serif;
     --mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Liberation Mono", monospace;
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --brand-blue: #3b8cf0;
-        --brand-blue-hover: #5a9ff3;
-        --bg: #0b1120;
-        --surface: #121a2b;
-        --surface-muted: #172136;
-        --border: #243049;
-        --border-strong: #33415f;
-        --text: #e6ebf5;
-        --text-muted: #a3adc2;
-        --text-faint: #75809a;
-        --focus: rgba(59, 140, 240, 0.45);
-        --danger: #f07a76;
-        --danger-bg: #2b1618;
-        --danger-border: #5c2a2c;
-        --warn: #f2c26b;
-        --warn-bg: #2a2112;
-        --warn-border: #5a4720;
-        --console-bg: #080d18;
-        --console-row: #0e1524;
-        --console-row-hover: #152038;
-        --shadow: none;
-    }
 }
 
 /* ============ Base ============ */
@@ -710,8 +685,9 @@ textarea:focus {
 
 .event {
     border-radius: 6px;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
     background: var(--console-row);
+    border: 1px solid var(--console-border);
 }
 
 .event.new {
@@ -758,23 +734,23 @@ textarea:focus {
     padding: 1px 8px;
     border-radius: 4px;
     font-weight: 600;
-    background: rgba(59, 140, 240, 0.16);
-    color: #8cbcff;
+    background: #e7f0fc;
+    color: #0b56b3;
 }
 
 .event-type[data-group="purchase"] {
-    background: rgba(52, 168, 83, 0.18);
-    color: #7fd99a;
+    background: #e5f5ea;
+    color: #1d7a38;
 }
 
 .event-type[data-group="cart"] {
-    background: rgba(242, 177, 52, 0.16);
-    color: #f5c96b;
+    background: #fff2d9;
+    color: #8a5800;
 }
 
 .event-type[data-group="auth"] {
-    background: rgba(168, 130, 255, 0.16);
-    color: #c3a8ff;
+    background: #f0eafe;
+    color: #6034c7;
 }
 
 .event-ids {
@@ -801,7 +777,7 @@ textarea:focus {
 .event-body pre {
     margin: 0;
     padding: 10px 12px;
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--console-bg);
     border: 1px solid var(--console-border);
     border-radius: 6px;
     overflow-x: auto;
@@ -887,7 +863,7 @@ textarea:focus {
 
 @keyframes flash {
     from {
-        background: rgba(52, 168, 83, 0.22);
+        background: #e2f4e7;
     }
 
     to {
