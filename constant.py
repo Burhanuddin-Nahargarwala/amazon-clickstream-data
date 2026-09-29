@@ -20,3 +20,5 @@ ACTIVITY_TABLE_NAME = "clickstream-job-activity"
 ACTIVITY_TTL_SECONDS = 24 * 60 * 60
 # An in_progress job with no event for this long is treated as dead (e.g. container restarted mid-job)
 STALE_JOB_SECONDS = 180
+# Streams stop automatically after this long, so forgotten streams don't run for weeks; users can start again
+MAX_STREAM_SECONDS = 3 * 60 * 60

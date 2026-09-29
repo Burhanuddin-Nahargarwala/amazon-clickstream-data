@@ -13,7 +13,8 @@ from s3 import S3
 import asyncio
 import threading
 from data_generation import data_generation
-from job_activity import JobActivity, JobTracker, make_job_id
+from job_activity import JobTracker, make_job_id
+from aws_clients import get_activity, get_dynamodb, get_s3
 from stream_errors import SERVER, StreamError, check_azure_connection, check_gcp_connection
 
 
@@ -68,8 +69,8 @@ async def before_data_generation(email_id: str, cloud_platform: str, **kwargs):
         if not cloud_parameters["project_id"] or not cloud_parameters["topic_id"]:
             raise HTTPException(status_code=400, detail="Please enter the project ID and topic ID.")
 
-    dynamodb = DynamoDB(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, DYNAMODB_REGION)
-    activity = JobActivity(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, DYNAMODB_REGION)
+    dynamodb = get_dynamodb()
+    activity = get_activity()
 
     # Check whether the user already has a job running. If yes, point them to it instead of starting another
     running_job_id = find_running_job(dynamodb, activity, email_id)
@@ -97,11 +98,7 @@ async def before_data_generation(email_id: str, cloud_platform: str, **kwargs):
     activity.create_summary(tracker.job_id, email_id, cloud_platform, target)
 
     # Fetch data from s3
-    s3_obj = S3(
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-        region_name=AWS_REGION,
-    )
+    s3_obj = get_s3()
 
     files = s3_obj.fetch_files(bucket_name=BUCKET_NAME, folder_prefix=S3_FOLDER_PREFIX)
 

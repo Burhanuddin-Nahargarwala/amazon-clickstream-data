@@ -20,7 +20,8 @@ from pathlib import Path
 # import eventhub_upload
 from before_data_generation import before_data_generation
 from dynamod_db import DynamoDB
-from job_activity import JobActivity, make_job_id
+from job_activity import make_job_id
+from aws_clients import get_activity, get_dynamodb
 import auth
 from constant import (
     AWS_ACCESS_KEY_ID,
@@ -57,9 +58,8 @@ async def stop_processing(details: dict = Body(...)):
     # fetch email_id
     email_id = details.get("email_id")
 
-    # Create dynamodb instances
-    dynamodb = DynamoDB(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, DYNAMODB_REGION)
-    activity = JobActivity(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, DYNAMODB_REGION)
+    dynamodb = get_dynamodb()
+    activity = get_activity()
 
     # Find the user's running work, if any
     try:
@@ -91,8 +91,7 @@ async def stop_processing(details: dict = Body(...)):
 @app.get("/jobs/latest", dependencies=[Depends(auth.get_api_key)])
 async def latest_job(email_id: str = Query(...)):
     """Returns the user's most recent job, so the UI can reconnect to it after a page reload."""
-    dynamodb = DynamoDB(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, DYNAMODB_REGION)
-    item = dynamodb.read_latest_by_email(email_id)
+    item = get_dynamodb().read_latest_by_email(email_id)
     if item is None:
         raise HTTPException(status_code=404, detail="No data generation found for this email.")
 
@@ -110,7 +109,7 @@ async def job_activity(job_id: str = Query(...), after: int = Query(0, ge=0), li
     Returns the job's live status plus the events sent after sequence number `after`.
     The UI polls this, passing the last `seq` it has already shown.
     """
-    activity = JobActivity(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, DYNAMODB_REGION)
+    activity = get_activity()
     summary = activity.get_summary(job_id)
     if summary is None:
         raise HTTPException(status_code=404, detail="Live activity is not available for this job.")
