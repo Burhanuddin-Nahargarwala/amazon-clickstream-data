@@ -1,5 +1,7 @@
 ## E-commerce Real-time Streaming Data API
 
+> **Deploying, rebuilding or tearing down on AWS:** see [docs/AWS_DEPLOYMENT.md](docs/AWS_DEPLOYMENT.md). It covers the ECS setup, DynamoDB tables, how streaming works, releases/rollback, costs and known issues. Parts of this README below describe the older EC2 setup.
+
 This project provides a FastAPI-based backend for generating real-time e-commerce streaming data. The API allows users to start and stop data generation processes, supporting both Azure and GCP configurations. Authentication is handled using access tokens.
 
 ### Features
